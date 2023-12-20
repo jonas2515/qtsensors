@@ -38,64 +38,35 @@
 **
 ****************************************************************************/
 
-#include "iiosensorproxylightsensor.h"
-#include "sensorproxy_interface.h"
+#ifndef IIOSENSORPROXY_PROXIMITYSENSOR_H
+#define IIOSENSORPROXY_PROXIMITYSENSOR_H
 
-#include <QtDBus/QDBusPendingReply>
+#include "iiosensorproxysensorbase.h"
 
-char const * const IIOSensorProxyLightSensor::id("iio-sensor-proxy.lightsensor");
+#include <qproximitysensor.h>
 
-static inline QString dbusPath() { return QStringLiteral("/net/hadess/SensorProxy"); }
+class NetHadessSensorProxyInterface;
 
-IIOSensorProxyLightSensor::IIOSensorProxyLightSensor(QSensor *sensor)
-    : IIOSensorProxySensorBase(dbusPath(), NetHadessSensorProxyInterface::staticInterfaceName(), sensor)
+class IIOSensorProxyProximitySensor : public IIOSensorProxySensorBase
 {
-    setReading<QLightReading>(&m_reading);
-    m_sensorProxyInterface = new NetHadessSensorProxyInterface(serviceName(), dbusPath(),
-                                                               QDBusConnection::systemBus(), this);
-}
+    Q_OBJECT
+public:
+    static char const * const id;
 
-IIOSensorProxyLightSensor::~IIOSensorProxyLightSensor()
-{
-}
+    IIOSensorProxyProximitySensor(QSensor *sensor);
+    ~IIOSensorProxyProximitySensor();
 
-void IIOSensorProxyLightSensor::start()
-{
-    if (isServiceRunning()) {
-        if (m_sensorProxyInterface->hasAmbientLight()
-            && m_sensorProxyInterface->lightLevelUnit() == QLatin1String("lux")) {
+    void start() override;
+    void stop() override;
 
-            QDBusPendingReply<> reply = m_sensorProxyInterface->ClaimLight();
-            reply.waitForFinished();
-            if (!reply.isError()) {
-                updateLightLevel(m_sensorProxyInterface->lightLevel());
-                return;
-            }
-        }
-    }
-    sensorStopped();
-}
+protected:
+    void updateProperties(const QVariantMap &changedProperties) override;
 
-void IIOSensorProxyLightSensor::stop()
-{
-    if (isServiceRunning()) {
-        QDBusPendingReply<> reply = m_sensorProxyInterface->ReleaseLight();
-        reply.waitForFinished();
-    }
-    sensorStopped();
-}
+private:
+    void updateProximityNear(bool near);
 
-void IIOSensorProxyLightSensor::updateProperties(const QVariantMap &changedProperties)
-{
-    if (changedProperties.contains("LightLevel")) {
-        double lux = changedProperties.value("LightLevel").toDouble();
-        updateLightLevel(lux);
-    }
-}
+    QProximityReading m_reading;
+    NetHadessSensorProxyInterface *m_sensorProxyInterface;
+};
 
-void IIOSensorProxyLightSensor::updateLightLevel(double lux)
-{
-    m_reading.setLux(lux);
-    m_reading.setTimestamp(produceTimestamp());
-    newReadingAvailable();
-}
+#endif // IIOSENSORPROXY_PROXIMITYSENSOR_H

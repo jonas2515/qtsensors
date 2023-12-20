@@ -9,12 +9,14 @@ load(qt_plugin)
 HEADERS += iiosensorproxysensorbase.h \
     iiosensorproxylightsensor.h \
     iiosensorproxyorientationsensor.h \
-    iiosensorproxycompass.h
+    iiosensorproxycompass.h \
+    iiosensorproxyproximitysensor.h
 
 SOURCES += iiosensorproxysensorbase.cpp \
     iiosensorproxylightsensor.cpp \
     iiosensorproxyorientationsensor.cpp \
     iiosensorproxycompass.cpp \
+    iiosensorproxyproximitysensor.cpp \
     main.cpp
 
 DBUS_INTERFACES += sensor_proxy sensor_proxy_compass dbus_properties

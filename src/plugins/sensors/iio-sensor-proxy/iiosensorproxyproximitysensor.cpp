@@ -38,37 +38,35 @@
 **
 ****************************************************************************/
 
-#include "iiosensorproxylightsensor.h"
+#include "iiosensorproxyproximitysensor.h"
 #include "sensorproxy_interface.h"
 
 #include <QtDBus/QDBusPendingReply>
 
-char const * const IIOSensorProxyLightSensor::id("iio-sensor-proxy.lightsensor");
+char const * const IIOSensorProxyProximitySensor::id("iio-sensor-proxy.proximitysensor");
 
 static inline QString dbusPath() { return QStringLiteral("/net/hadess/SensorProxy"); }
 
-IIOSensorProxyLightSensor::IIOSensorProxyLightSensor(QSensor *sensor)
+IIOSensorProxyProximitySensor::IIOSensorProxyProximitySensor(QSensor *sensor)
     : IIOSensorProxySensorBase(dbusPath(), NetHadessSensorProxyInterface::staticInterfaceName(), sensor)
 {
-    setReading<QLightReading>(&m_reading);
+    setReading<QProximityReading>(&m_reading);
     m_sensorProxyInterface = new NetHadessSensorProxyInterface(serviceName(), dbusPath(),
                                                                QDBusConnection::systemBus(), this);
 }
 
-IIOSensorProxyLightSensor::~IIOSensorProxyLightSensor()
+IIOSensorProxyProximitySensor::~IIOSensorProxyProximitySensor()
 {
 }
 
-void IIOSensorProxyLightSensor::start()
+void IIOSensorProxyProximitySensor::start()
 {
     if (isServiceRunning()) {
-        if (m_sensorProxyInterface->hasAmbientLight()
-            && m_sensorProxyInterface->lightLevelUnit() == QLatin1String("lux")) {
-
-            QDBusPendingReply<> reply = m_sensorProxyInterface->ClaimLight();
+        if (m_sensorProxyInterface->hasProximity()) {
+            QDBusPendingReply<> reply = m_sensorProxyInterface->ClaimProximity();
             reply.waitForFinished();
             if (!reply.isError()) {
-                updateLightLevel(m_sensorProxyInterface->lightLevel());
+                updateProximityNear(m_sensorProxyInterface->proximityNear());
                 return;
             }
         }
@@ -76,26 +74,26 @@ void IIOSensorProxyLightSensor::start()
     sensorStopped();
 }
 
-void IIOSensorProxyLightSensor::stop()
+void IIOSensorProxyProximitySensor::stop()
 {
     if (isServiceRunning()) {
-        QDBusPendingReply<> reply = m_sensorProxyInterface->ReleaseLight();
+        QDBusPendingReply<> reply = m_sensorProxyInterface->ReleaseProximity();
         reply.waitForFinished();
     }
     sensorStopped();
 }
 
-void IIOSensorProxyLightSensor::updateProperties(const QVariantMap &changedProperties)
+void IIOSensorProxyProximitySensor::updateProperties(const QVariantMap &changedProperties)
 {
-    if (changedProperties.contains("LightLevel")) {
-        double lux = changedProperties.value("LightLevel").toDouble();
-        updateLightLevel(lux);
+    if (changedProperties.contains("ProximityNear")) {
+        bool near = changedProperties.value("ProximityNear").toBool();
+        updateProximityNear(near);
     }
 }
 
-void IIOSensorProxyLightSensor::updateLightLevel(double lux)
+void IIOSensorProxyProximitySensor::updateProximityNear(bool near)
 {
-    m_reading.setLux(lux);
+    m_reading.setClose(near);
     m_reading.setTimestamp(produceTimestamp());
     newReadingAvailable();
 }
